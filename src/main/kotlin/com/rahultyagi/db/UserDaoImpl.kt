@@ -1,14 +1,18 @@
 package com.rahultyagi.db
 
 import com.rahultyagi.dao.DatabaseFactory.dbQuery
+import com.rahultyagi.model.ImageTable
+import com.rahultyagi.model.ImageTable.imageId
+import com.rahultyagi.model.ImageTable.imageUrl
+import com.rahultyagi.model.ImageTable.userId
 import com.rahultyagi.model.Registration
 import com.rahultyagi.model.User
-import com.rahultyagi.repository.user.UserRepo
 import com.rahultyagi.security.hashPassword
+import com.rahultyagi.users.ForgotPasswordRequest
+import com.rahultyagi.users.ProfileImage
+import com.rahultyagi.users.ProfileImageRequest
 import com.rahultyagi.users.SignUpParams
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 
 class UserDaoImpl : UserDao {
     override suspend fun insert(params: SignUpParams): User? {
@@ -21,7 +25,7 @@ class UserDaoImpl : UserDao {
                 it[type] = params.type
                 it[address] = params.address
                 it[pinCode] = params.pinCode
-               //it[password] = params.password
+                //it[password] = params.password
                 it[password] = hashPassword(params.password)
             }
             insertUser.resultedValues?.singleOrNull()?.let {
@@ -37,6 +41,35 @@ class UserDaoImpl : UserDao {
         }
     }
 
+    override suspend fun updatePassword(params: ForgotPasswordRequest): Boolean {
+        return dbQuery {
+            Registration.update({ Registration.email eq params.email }) {
+                it[password] = hashPassword(params.password)
+            } > 0
+        }
+    }
+
+    override suspend fun insertImage(params: ProfileImageRequest): ProfileImage? {
+        return dbQuery {
+            val saveImage = ImageTable.insert {
+                it[userId] = params.id
+                it[imageUrl] = params.url
+            }
+            saveImage.resultedValues?.singleOrNull()?.let {
+                ProfileImage(it[imageId], it[imageUrl])
+            }
+        }
+
+    }
+
+    override suspend fun getProfileImage(userid: String): ProfileImage? {
+        return dbQuery {
+            val profileImage = ImageTable.select { ImageTable.userId eq userid.toInt() }
+                .map { rowToProfileImage(it) }.singleOrNull()
+            profileImage
+        }
+    }
+
     private fun rowToUser(row: ResultRow): User? {
         return User(
             id = row[Registration.id],
@@ -49,5 +82,9 @@ class UserDaoImpl : UserDao {
             pinCode = row[Registration.pinCode],
             password = row[Registration.password]
         )
+    }
+
+    private fun rowToProfileImage(row: ResultRow): ProfileImage? {
+        return ProfileImage(id = row[userId], url = row[imageUrl])
     }
 }

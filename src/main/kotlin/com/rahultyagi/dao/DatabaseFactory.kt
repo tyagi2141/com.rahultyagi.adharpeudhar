@@ -1,5 +1,6 @@
 package com.rahultyagi.dao
 
+import com.rahultyagi.model.ImageTable
 import com.rahultyagi.model.Registration
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -17,6 +18,7 @@ object DatabaseFactory {
         Database.connect(CreateDataBase())
         transaction {
             SchemaUtils.create(Registration)
+            SchemaUtils.create(ImageTable)
         }
 
     }

@@ -3,10 +3,7 @@ package com.rahultyagi.repository.user
 import com.rahultyagi.db.UserDao
 import com.rahultyagi.plugins.generateToken
 import com.rahultyagi.security.hashPassword
-import com.rahultyagi.users.AuthResponse
-import com.rahultyagi.users.AuthResponseData
-import com.rahultyagi.users.SignInParams
-import com.rahultyagi.users.SignUpParams
+import com.rahultyagi.users.*
 import com.rahultyagi.util.Response
 import io.ktor.http.*
 
@@ -54,8 +51,7 @@ class UserRepoImpl(val userDao: UserDao) : UserRepo {
 
         return if (getUser == null) {
             Response.Error(
-                code = HttpStatusCode.Conflict,
-                data = AuthResponse(data = null, errorMessage = "User not exists")
+                code = HttpStatusCode.Conflict, data = AuthResponse(data = null, errorMessage = "User not exists")
             )
         } else {
 
@@ -87,7 +83,61 @@ class UserRepoImpl(val userDao: UserDao) : UserRepo {
         }
     }
 
+    override suspend fun forgotPassword(params: ForgotPasswordRequest): Response<ForgotPasswordResponse> {
+
+        if (userAlreadyExist(params.email)) {
+            return when (val update = userDao.updatePassword(params)) {
+                true -> {
+                    Response.Success(
+                        data = ForgotPasswordResponse(
+                            status = update, message = "password update successfully.."
+                        )
+                    )
+                }
+                else -> {
+                    Response.Success(
+                        data = ForgotPasswordResponse(
+                            status = update, message = "password update successfully..2"
+                        )
+                    )
+
+                }
+            }
+        } else {
+            return Response.Error(
+                data = ForgotPasswordResponse(
+                    status = false, message = "Email not found"
+                ), code = HttpStatusCode.NotFound
+            )
+        }
+
+
+    }
+
+    override suspend fun insertImage(params: ProfileImageRequest): Response<ProfileImage> {
+        val saveImageResult = userDao.insertImage(params)
+        return if (saveImageResult == null) {
+            Response.Error(code = HttpStatusCode.NotFound, data = ProfileImage(status = false, id = 0, url = ""))
+        } else {
+            Response.Success(data = ProfileImage(status = true, id = saveImageResult.id, url = saveImageResult.url))
+        }
+    }
+
+    override suspend fun getProfileImage(userId: Int): Response<ProfileImage> {
+
+        val profileResponse = userDao.getProfileImage(userId = userId.toString())
+
+        return if (profileResponse == null) {
+            Response.Error(code = HttpStatusCode.NotFound, data = ProfileImage(id = -1, url = "", status = false))
+        } else {
+            Response.Success(data = profileResponse)
+        }
+    }
+
+
     private suspend fun userAlreadyExist(email: String): Boolean {
         return userDao.findByEmail(params = email) != null
     }
+
+
 }

@@ -1,4 +1,3 @@
-
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
@@ -7,14 +6,75 @@ val postgres_version: String by project
 val h2_version: String by project
 val exposed_version: String by project
 
-val hikaricp_version:String by project
-val koin_version:String by project
+val hikaricp_version: String by project
+val koin_version: String by project
+
+
+/*
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath ("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+        classpath ("com.github.jengelman.gradle.plugins:shadow:6.0.0")
+    }
+}
+*/
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        // classpath ("com.github.johnrengelman:shadow:6.0.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20")
+        classpath("com.github.jengelman.gradle.plugins:shadow:5.2.0")
+    }
+}
+
+// Required by the 'shadowJar' task
+
+//val mainClassName = "io.ktor.server.netty.EngineMain"
+
+val mainClassName = "io.ktor.server.netty.EngineMain"
+
+project.setProperty("mainClassName", mainClassName)
+
+sourceSets.main.configure {
+    resources.srcDirs("src/main/resources").includes.addAll(arrayOf("**/*.*"))
+}
+
+
 
 plugins {
     kotlin("jvm") version "1.8.20"
     id("io.ktor.plugin") version "2.2.4"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.8.20"
+    // id ("com.github.johnrengelman.shadow") version "8.1.1"
+    // id ("java")
+    id ("com.github.johnrengelman.shadow") version "5.2.0"
+
 }
+
+
+/*shadowJar {
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+}*/
+
+/*
+tasks.shadowJar {
+    manifest {
+        attributes(mainClassName)
+    }
+}
+*/
+
+
+
 
 group = "com.rahultyagi"
 version = "0.0.1"
@@ -53,11 +113,14 @@ dependencies {
     //implementation("org.ehcache:ehcache:3.10.8")
     implementation("io.insert-koin:koin-ktor:$koin_version")
 
-    implementation ("org.jetbrains.kotlin:kotlin-stdlib:1.5.21")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.5.21")
 
     implementation("io.ktor:ktor-server-call-logging:$ktor_version")
 
 
-
     //implementation ("io.insert-koin:koin-core:3.1.2")
+}
+
+tasks.create("stage") {
+    dependsOn("installDist")
 }
